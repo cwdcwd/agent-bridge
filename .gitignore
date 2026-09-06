@@ -7,3 +7,4 @@ dist/
 !vitest.config.ts
 coverage/
 .env
+package-lock.json
