@@ -3,7 +3,7 @@
  */
 
 export { AgentBridge } from "./core.js";
-export type { AgentBridgeOptions } from "./core.js";
+export type { AgentBridgeOptions, TaskBoard } from "./core.js";
 export { A2AClient } from "./a2a.js";
 export type { A2AClientOptions, A2AMessage } from "./a2a.js";
 export { GitHubClient } from "./github.js";
