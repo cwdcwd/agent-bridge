@@ -78,6 +78,41 @@ export class AgentBridge {
     await this.a2a.sendMessage(text, this.role);
   }
 
+  /** Get a task board view — all open tasks grouped by status. */
+  async getTaskBoard(): Promise<TaskBoard> {
+    const tasks = await this.gh.getOpenIssues();
+    const board: TaskBoard = {
+      open: [],
+      claimed: [],
+      in_progress: [],
+      in_review: [],
+      blocked: [],
+    };
+    for (const task of tasks) {
+      switch (task.status) {
+        case "open":
+          board.open.push(task);
+          break;
+        case "claimed":
+          board.claimed.push(task);
+          break;
+        case "in_progress":
+          board.in_progress.push(task);
+          break;
+        case "in_review":
+          board.in_review.push(task);
+          break;
+        case "blocked":
+          board.blocked.push(task);
+          break;
+        case "done":
+          // done tasks are closed on GitHub, won't appear in open issues
+          break;
+      }
+    }
+    return board;
+  }
+
   /**
    * Return a human-readable summary of the task board.
    *
@@ -134,4 +169,26 @@ export class AgentBridge {
 
     return lines.join("\n");
   }
+
+  /** Review a PR — fetches the diff and posts a review (approve/request_changes/comment). */
+  async reviewPR(
+    prNumber: number,
+    event: "approve" | "request_changes" | "comment",
+    body: string,
+  ): Promise<void> {
+    await this.gh.postReview(prNumber, event, body);
+    await this.a2a.notify(
+      "pr_reviewed",
+      { pr: prNumber, event, reviewer: this.role },
+      this.role,
+    );
+  }
+}
+
+export interface TaskBoard {
+  open: Task[];
+  claimed: Task[];
+  in_progress: Task[];
+  in_review: Task[];
+  blocked: Task[];
 }

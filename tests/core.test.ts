@@ -80,8 +80,11 @@ describe("AgentBridge", () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
-    expect(body.params.event).toBe("message");
-    expect(body.params.data.text).toContain("hey doom");
+    expect(body.method).toBe("message/send");
+    const text = body.params.message.parts[0].text;
+    const parsed = JSON.parse(text);
+    expect(parsed.event).toBe("message");
+    expect(parsed.data.text).toContain("hey doom");
   });
 
   it("blockTask adds blocked label and notifies peer with reason", async () => {
@@ -107,9 +110,11 @@ describe("AgentBridge", () => {
     expect(labelBody.labels).toEqual(["blocked"]);
     // Second call: A2A notify
     const a2aBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
-    expect(a2aBody.params.event).toBe("task_blocked");
-    expect(a2aBody.params.data.reason).toBe("waiting on API spec from doom");
-    expect(a2aBody.params.data.issue).toBe(7);
+    expect(a2aBody.method).toBe("message/send");
+    const a2aParsed = JSON.parse(a2aBody.params.message.parts[0].text);
+    expect(a2aParsed.event).toBe("task_blocked");
+    expect(a2aParsed.data.reason).toBe("waiting on API spec from doom");
+    expect(a2aParsed.data.issue).toBe(7);
   });
 
   it("unblockTask removes blocked label and notifies peer", async () => {
@@ -133,8 +138,10 @@ describe("AgentBridge", () => {
     expect(labelInit.method).toBe("DELETE");
     // Second call: A2A notify
     const a2aBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
-    expect(a2aBody.params.event).toBe("task_unblocked");
-    expect(a2aBody.params.data.issue).toBe(7);
+    expect(a2aBody.method).toBe("message/send");
+    const a2aParsed = JSON.parse(a2aBody.params.message.parts[0].text);
+    expect(a2aParsed.event).toBe("task_unblocked");
+    expect(a2aParsed.data.issue).toBe(7);
   });
 
   it("getTaskSummary returns empty-board message when no tasks", async () => {
