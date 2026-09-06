@@ -34,9 +34,12 @@ describe("A2AClient", () => {
 
     const body = JSON.parse(init.body as string);
     expect(body.jsonrpc).toBe("2.0");
-    expect(body.method).toBe("agent/notify");
-    expect(body.params.event).toBe("task_claimed");
-    expect(body.params.source).toBe("doom");
+    expect(body.method).toBe("message/send");
+    // The event data is embedded in the A2A message text as JSON
+    const textContent = body.params.message.parts[0].text;
+    const parsed = JSON.parse(textContent);
+    expect(parsed.event).toBe("task_claimed");
+    expect(parsed.source).toBe("doom");
   });
 
   it("strips trailing slashes from endpoint", () => {
