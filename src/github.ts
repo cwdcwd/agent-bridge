@@ -44,7 +44,7 @@ export class GitHubClient {
     const resp = await fetch(url, { headers: this.headers() });
     if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${await resp.text()}`);
 
-    const issues: GitHubIssue[] = await resp.json();
+    const issues = (await resp.json()) as GitHubIssue[];
     return issues
       .filter((issue) => !issue.pull_request)
       .map((issue) => {
