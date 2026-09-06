@@ -136,4 +136,105 @@ describe("AgentBridge", () => {
     expect(a2aBody.params.event).toBe("task_unblocked");
     expect(a2aBody.params.data.issue).toBe(7);
   });
+
+  it("getTaskSummary returns empty-board message when no tasks", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse([]));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bridge = new AgentBridge({
+      repo: "owner/repo",
+      agentName: "kangbot",
+      peerEndpoint: "https://ai.lan/a2a/uuid",
+      githubToken: "ghp_fake",
+      a2aToken: "sk_fake",
+    });
+
+    const summary = await bridge.getTaskSummary();
+
+    expect(summary).toContain("📋 Task Board");
+    expect(summary).toContain("No open tasks");
+  });
+
+  it("getTaskSummary groups tasks by status and shows counts", async () => {
+    const issues = [
+      {
+        number: 1,
+        title: "Implement feature A",
+        body: "",
+        labels: [{ name: "open" }],
+        assignee: null,
+      },
+      {
+        number: 2,
+        title: "Fix bug B",
+        body: "",
+        labels: [{ name: "claimed" }],
+        assignee: { login: "doom" },
+      },
+      {
+        number: 3,
+        title: "Refactor module C",
+        body: "",
+        labels: [{ name: "blocked" }],
+        assignee: { login: "kangbot" },
+      },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse(issues));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bridge = new AgentBridge({
+      repo: "owner/repo",
+      agentName: "kangbot",
+      peerEndpoint: "https://ai.lan/a2a/uuid",
+      githubToken: "ghp_fake",
+      a2aToken: "sk_fake",
+    });
+
+    const summary = await bridge.getTaskSummary();
+
+    // Header
+    expect(summary).toContain("📋 Task Board");
+    // Each status group
+    expect(summary).toContain("OPEN (1)");
+    expect(summary).toContain("CLAIMED (1)");
+    expect(summary).toContain("BLOCKED (1)");
+    // Each task
+    expect(summary).toContain("#1 Implement feature A — unassigned");
+    expect(summary).toContain("#2 Fix bug B — doom");
+    expect(summary).toContain("#3 Refactor module C — kangbot");
+    // Total line
+    expect(summary).toContain("Total: 3 open tasks");
+    expect(summary).toContain("Open: 1");
+    expect(summary).toContain("Claimed: 1");
+    expect(summary).toContain("Blocked: 1");
+  });
+
+  it("getTaskSummary omits empty status groups", async () => {
+    const issues = [
+      {
+        number: 5,
+        title: "Single task",
+        body: "",
+        labels: [{ name: "open" }],
+        assignee: null,
+      },
+    ];
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse(issues));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bridge = new AgentBridge({
+      repo: "owner/repo",
+      agentName: "kangbot",
+      peerEndpoint: "https://ai.lan/a2a/uuid",
+      githubToken: "ghp_fake",
+      a2aToken: "sk_fake",
+    });
+
+    const summary = await bridge.getTaskSummary();
+
+    expect(summary).toContain("OPEN (1)");
+    expect(summary).not.toContain("CLAIMED");
+    expect(summary).not.toContain("BLOCKED");
+    expect(summary).toContain("Total: 1 open task");
+  });
 });
