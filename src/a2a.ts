@@ -24,7 +24,7 @@ export class A2AClient {
   constructor(opts: A2AClientOptions) {
     this.endpoint = opts.endpoint.replace(/\/+$/, "");
     this.token = opts.token;
-    this.timeoutMs = opts.timeoutMs ?? 10_000;
+    this.timeoutMs = opts.timeoutMs ?? 120_000;
   }
 
   /** Send a notification event to the peer agent. */
@@ -36,8 +36,13 @@ export class A2AClient {
 
     const message: A2AMessage = {
       jsonrpc: "2.0",
-      method: "agent/notify",
-      params: { event, data, source },
+      method: "message/send",
+      params: {
+        message: {
+          role: "user",
+          parts: [{ type: "text", text: JSON.stringify({ event, data, source }) }],
+        },
+      },
       id: `${source}-${event}-${data.issue ?? ""}`,
     };
 
