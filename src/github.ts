@@ -31,11 +31,14 @@ export class GitHubClient {
   }
 
   private headers(): Record<string, string> {
-    return {
-      Authorization: `Bearer ${this.token}`,
+    const h: Record<string, string> = {
       Accept: "application/vnd.github+json",
       "Content-Type": "application/json",
     };
+    if (this.token) {
+      h.Authorization = `Bearer ${this.token}`;
+    }
+    return h;
   }
 
   /** Fetch open issues (excludes PRs) and map them to Task objects. */
