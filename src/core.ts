@@ -8,6 +8,7 @@ import { GitHubClient } from "./github.js";
 import { A2AClient } from "./a2a.js";
 import {
   type Task,
+  type TaskStatus,
   type AgentRole,
   claim as claimTask,
 } from "./models.js";
@@ -110,6 +111,63 @@ export class AgentBridge {
       }
     }
     return board;
+  }
+
+  /**
+   * Return a human-readable summary of the task board.
+   *
+   * Fetches all open tasks from GitHub and groups them by status,
+   * listing each task with its issue number, title, assignee, and PR
+   * link (if any). The summary ends with a status breakdown count.
+   */
+  async getTaskSummary(): Promise<string> {
+    const tasks = await this.getOpenTasks();
+
+    if (tasks.length === 0) {
+      return "📋 Task Board\n\nNo open tasks. 🎉";
+    }
+
+    const statuses: TaskStatus[] = [
+      "open",
+      "claimed",
+      "in_progress",
+      "in_review",
+      "blocked",
+    ];
+
+    const byStatus: Record<string, Task[]> = {};
+    for (const s of statuses) {
+      byStatus[s] = tasks.filter((t) => t.status === s);
+    }
+
+    const lines: string[] = ["📋 Task Board", ""];
+
+    for (const s of statuses) {
+      const group = byStatus[s];
+      if (group.length === 0) continue;
+
+      const label = s.replace(/_/g, " ").toUpperCase();
+      lines.push(`■ ${label} (${group.length})`);
+
+      for (const t of group) {
+        const assignee = t.assignedTo === "unassigned" ? "unassigned" : t.assignedTo;
+        const pr = t.prNumber ? ` · PR #${t.prNumber}` : "";
+        lines.push(`  #${t.issueNumber} ${t.title} — ${assignee}${pr}`);
+      }
+      lines.push("");
+    }
+
+    lines.push("---");
+    lines.push(
+      `Total: ${tasks.length} open task${tasks.length === 1 ? "" : "s"}` +
+        ` | Open: ${byStatus.open.length}` +
+        ` | Claimed: ${byStatus.claimed.length}` +
+        ` | In Progress: ${byStatus.in_progress.length}` +
+        ` | In Review: ${byStatus.in_review.length}` +
+        ` | Blocked: ${byStatus.blocked.length}`,
+    );
+
+    return lines.join("\n");
   }
 
   /** Review a PR — fetches the diff and posts a review (approve/request_changes/comment). */
