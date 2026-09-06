@@ -102,4 +102,19 @@ export class GitHubClient {
       throw new Error(`GitHub API ${resp.status}: ${await resp.text()}`);
     }
   }
+
+  /** Post a review on a pull request (approve, request_changes, or comment). */
+  async postReview(
+    prNumber: number,
+    event: "approve" | "request_changes" | "comment",
+    body: string,
+  ): Promise<void> {
+    const url = `${this.api}/repos/${this.repo}/pulls/${prNumber}/reviews`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({ event, body }),
+    });
+    if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${await resp.text()}`);
+  }
 }
