@@ -94,4 +94,40 @@ describe("GitHubClient", () => {
     const client = new GitHubClient({ token: "ghp_fake", repo: "owner/repo" });
     await expect(client.getOpenIssues()).rejects.toThrow("GitHub API 404");
   });
+
+  it("removeLabel sends DELETE to labels endpoint", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse({}));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new GitHubClient({ token: "ghp_fake", repo: "owner/repo" });
+    await client.removeLabel(9, "blocked");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      "https://api.github.com/repos/owner/repo/issues/9/labels/blocked",
+    );
+    expect(init.method).toBe("DELETE");
+  });
+
+  it("removeLabel is idempotent on 404 (label already absent)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("Not Found", { status: 404 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new GitHubClient({ token: "ghp_fake", repo: "owner/repo" });
+    await expect(client.removeLabel(9, "blocked")).resolves.toBeUndefined();
+  });
+
+  it("removeLabel throws on non-404 errors", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("Forbidden", { status: 403 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = new GitHubClient({ token: "ghp_fake", repo: "owner/repo" });
+    await expect(client.removeLabel(9, "blocked")).rejects.toThrow(
+      "GitHub API 403",
+    );
+  });
 });

@@ -44,7 +44,7 @@ export class GitHubClient {
     const resp = await fetch(url, { headers: this.headers() });
     if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${await resp.text()}`);
 
-    const issues: GitHubIssue[] = await resp.json();
+    const issues = (await resp.json()) as GitHubIssue[];
     return issues
       .filter((issue) => !issue.pull_request)
       .map((issue) => {
@@ -88,5 +88,18 @@ export class GitHubClient {
       body: JSON.stringify({ labels: [label] }),
     });
     if (!resp.ok) throw new Error(`GitHub API ${resp.status}: ${await resp.text()}`);
+  }
+
+  /** Remove a label from an issue. Succeeds silently if the label is absent. */
+  async removeLabel(issueNumber: number, label: string): Promise<void> {
+    const url = `${this.api}/repos/${this.repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`;
+    const resp = await fetch(url, {
+      method: "DELETE",
+      headers: this.headers(),
+    });
+    // 404 means the label wasn't there — treat as success (idempotent)
+    if (!resp.ok && resp.status !== 404) {
+      throw new Error(`GitHub API ${resp.status}: ${await resp.text()}`);
+    }
   }
 }

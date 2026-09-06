@@ -52,6 +52,26 @@ export class AgentBridge {
     );
   }
 
+  /** Mark a task as blocked and request help from the peer agent. */
+  async blockTask(issueNumber: number, reason: string): Promise<void> {
+    await this.gh.addLabel(issueNumber, "blocked");
+    await this.a2a.notify(
+      "task_blocked",
+      { issue: issueNumber, agent: this.role, reason },
+      this.role,
+    );
+  }
+
+  /** Unblock a task — removes the blocked label so work can resume. */
+  async unblockTask(issueNumber: number): Promise<void> {
+    await this.gh.removeLabel(issueNumber, "blocked");
+    await this.a2a.notify(
+      "task_unblocked",
+      { issue: issueNumber, agent: this.role },
+      this.role,
+    );
+  }
+
   /** Send a freeform message to the peer agent. */
   async sendMessage(text: string): Promise<void> {
     await this.a2a.sendMessage(text, this.role);
