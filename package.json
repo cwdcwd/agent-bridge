@@ -1,11 +1,15 @@
 {
-  "name": "agent-bridge",
+  "name": "@cwdcwd/agent-bridge",
   "version": "0.1.0",
   "description": "Multi-agent software collaboration protocol via A2A + GitHub issues/PRs",
   "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
